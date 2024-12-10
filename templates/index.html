@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Swap</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        input[type="file"] {
+            margin: 10px;
+        }
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-top: 20px;
+        }
+        .preview-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+         /* Ensuring all images have the same dimensions */
+         img {
+            max-width: 300px; /* You can adjust the max-width as needed */
+            max-height: 300px; /* Ensuring all images have the same height */
+            display: block;
+            margin: 10px 0;
+            object-fit: contain; /* Ensure the aspect ratio is preserved */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Face Swap</h1>
+
+    <!-- Form to upload images -->
+    <form id="uploadForm">
+        <input type="file" id="sourceImage" name="source_image" accept="image/*" required>
+        <input type="file" id="destinationImage" name="destination_image" accept="image/*" required>
+        <button type="submit">Swap Faces</button>
+    </form>
+
+    <!-- Image preview section -->
+    <div class="preview-container">
+        <div>
+            <h3>Source Image</h3>
+            <img id="sourceImagePreview" src="" alt="Source Image Preview" style="display: none;">
+        </div>
+        <div>
+            <h3>Destination Image</h3>
+            <img id="destinationImagePreview" src="" alt="Destination Image Preview" style="display: none;">
+        </div>
+    </div>
+
+    <!-- Display the output image -->
+    <h3>Swapped Face Image</h3>
+    <img id="outputImage" src="" alt="Output Image" style="display: none;">
+
+    <script>
+        // Display image previews when selected
+        document.getElementById('sourceImage').addEventListener('change', function(event) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('sourceImagePreview').src = e.target.result;
+                document.getElementById('sourceImagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        });
+
+        document.getElementById('destinationImage').addEventListener('change', function(event) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('destinationImagePreview').src = e.target.result;
+                document.getElementById('destinationImagePreview').style.display = 'block';
+            };
+            reader.readAsDataURL(event.target.files[0]);
+        });
+
+        // Handle form submission and send data to API
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            const formData = new FormData();
+            formData.append('source_image', document.getElementById('sourceImage').files[0]);
+            formData.append('destination_image', document.getElementById('destinationImage').files[0]);
+
+            // Show a loading indicator (optional)
+            const outputImage = document.getElementById('outputImage');
+            outputImage.style.display = 'none';
+            outputImage.src = '';
+
+            // Send data to the backend API using Fetch API
+            fetch('/swap_faces', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.output_filepath) {
+                    // Display the swapped face image
+                     // Get the base URL of the Flask application
+                    const baseUrl = window.location.origin;
+                    // Construct the full URL for the output image
+                    const imageUrl = `${baseUrl}/${data.output_filepath}`;
+                    outputImage.src = imageUrl;
+                    outputImage.style.display = 'block';
+                } else {
+                    alert('An error occurred: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again later.');
+            });
+        });
+    </script>
+
+</body>
+</html>
